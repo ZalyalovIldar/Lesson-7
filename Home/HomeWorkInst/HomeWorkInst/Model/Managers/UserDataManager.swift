@@ -12,13 +12,39 @@ import UIKit
 ///Data Manager of User
 class UserDataManager {
     
-    static let users: [User] = [User(id: "0", nickname: "romash_only", avatarImage: "ava")]
-    
+    var userDefaults = UserDefaults.standard
+        
     /// Method for getting User
     /// - Parameter nickname: nickname of User
     func getUser(nickname: String) -> User {
-        return UserDataManager.users.filter {
-            $0.nickname == nickname
-        }.first!
+        
+        if getFromUserDefaults() != nil {
+            return getFromUserDefaults()!
+        }
+        else {
+            updateUserDefaults(user: User(id: UUID().uuidString, nickname: "romash_only", avatarImage: "ava"))
+            return getFromUserDefaults()!
+        }
+        
+    }
+    
+    func updateUserDefaults(user: User) {
+        let encoder = JSONEncoder()
+        let jsonData = try! encoder.encode(user)
+        userDefaults.set(jsonData, forKey: UserDefaultKeys.user)
+    }
+    
+    func getFromUserDefaults() -> User? {
+        
+        if let userData = userDefaults.object(forKey: UserDefaultKeys.user) as? Data {
+              
+            let decoder = JSONDecoder()
+            
+            let model = try? decoder.decode(User.self, from: userData)
+            
+            return model!
+        }
+        
+        return nil
     }
 }

@@ -26,6 +26,7 @@ protocol DataProtocol {
 
 enum UserDefaultKeys {
     static let posts = "posts"
+    static let user = "user"
 }
 
 /// Data Manager of User
@@ -48,10 +49,10 @@ class PostDataManager: DataProtocol {
             Post(id: "3", image: "post4", text: "Very Bad", user: user, likes: 2, date: Date()),
         ]
         
-        if (userDefaults.object(forKey: UserDefaultKeys.posts) as? Data) != nil {
-            allPosts = getFromUserDefaults()
+        if getFromUserDefaults() != nil {
+            allPosts = getFromUserDefaults()!
         }
-        if (userDefaults.object(forKey: UserDefaultKeys.posts) as? Data) == nil {
+        else {
             updateUserDefaults(posts: allPosts)
         }
         
@@ -92,8 +93,8 @@ class PostDataManager: DataProtocol {
     
     func syncGetAllOfUser(user: User) -> [Post] {
         
-        print(getFromUserDefaults())
-        allPosts = getFromUserDefaults()
+        print(getFromUserDefaults()!)
+        allPosts = getFromUserDefaults()!
 
         return reverse(array: allPosts.filter { $0.user.id == user.id })
     }
@@ -221,9 +222,7 @@ class PostDataManager: DataProtocol {
         return reverseArray
     }
     
-    func getFromUserDefaults() -> [Post] {
-        
-        var posts: [Post] = []
+    func getFromUserDefaults() -> [Post]? {
         
         if let postsData = userDefaults.object(forKey: UserDefaultKeys.posts) as? Data {
               
@@ -234,7 +233,7 @@ class PostDataManager: DataProtocol {
             return model!
         }
         
-        return posts
+        return nil
     }
     
     func updateUserDefaults(posts: [Post]) {
