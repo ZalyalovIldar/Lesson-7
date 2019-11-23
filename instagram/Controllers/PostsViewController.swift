@@ -4,12 +4,17 @@ private let postCellIdentifier = "postCell"
 private let postCellNibName = "PostCell"
 
 class PostsViewController: UIViewController {
+    
+    //MARK: - IBOutlets
 
     @IBOutlet weak var tableView: UITableView!
-    @IBOutlet weak var searchBar: UISearchBar!
+    
+    //MARK: - Properties
     
     var posts: [PostModel] = []
     var postIndexPath: IndexPath!
+    
+    //MARK: - Life Circle
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,6 +30,8 @@ class PostsViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         tableView.scrollToRow(at: postIndexPath, at: .top, animated: true)
     }
+    
+    //MARK: - Data Methods
     
     func fetchData() {
         
@@ -68,21 +75,29 @@ extension PostsViewController: UITableViewDelegate, UITableViewDataSource {
 
 //MARK: - SearchBar
 
-extension PostsViewController: UISearchBarDelegate {
+extension PostsViewController: UISearchResultsUpdating {
     
     func setupSearchBar() {
-        searchBar.delegate = self
+        
+        let searchController = UISearchController(searchResultsController: nil)
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        definesPresentationContext = true
+        navigationItem.searchController = searchController
+        
     }
     
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+    func updateSearchResults(for searchController: UISearchController) {
+        
+        guard let searchText = searchController.searchBar.text else { return }
         
         guard !searchText.isEmpty else {
             fetchData()
             return
         }
-        
+
         LocalDataManager.shared.asyncSearchPost(for: searchText) { postModels in
-            
+
             DispatchQueue.main.async {
                 self.posts = postModels
                 self.tableView.reloadData()
