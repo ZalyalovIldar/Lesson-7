@@ -43,6 +43,7 @@ class PostCell: UITableViewCell {
         
         let mainActionSheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
+            
             LocalDataManager.shared.asyncDeletePost(with: self.postModel.id) {
                 self.postCellDelegate.reloadData()
             }

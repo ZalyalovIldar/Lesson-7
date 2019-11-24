@@ -1,22 +1,54 @@
 import UIKit
 
+enum UserDefaultKeys {
+    
+    static let isFirstLaunch = "isFirstLaunch"
+    static let posts = "posts"
+}
+
 class LocalDataManager: DataManagerProtocol {
     
     static let shared = LocalDataManager()
     
-    private var posts: [PostModel] = Generator.getData()
+    private let userDefaults = UserDefaults.standard
+    
+    //MARK: - UserDefaults
+    
+    func getAllPosts() -> [PostModel] {
+    
+        //Получение всех PostModel из UserDefaults
+        if let postsData = userDefaults.object(forKey: UserDefaultKeys.posts) as? Data,
+            let posts = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(postsData) as? [PostModel] {
+            return posts
+        } else {
+            return []
+        }
+    }
+    
+    func setAllPosts(for posts: [PostModel]) {
+        
+        //Замена старых PostModel в UserDefaults на новые
+        let postsData = try? NSKeyedArchiver.archivedData(withRootObject: posts, requiringSecureCoding: false)
+        userDefaults.set(postsData, forKey: UserDefaultKeys.posts)
+    }
     
     //MARK: - Save
     
     func syncSavePost(post: PostModel) {
-        self.posts.append(post)
+        
+        var posts = getAllPosts()
+        posts.append(post)
+        setAllPosts(for: posts)
     }
     
     func asyncSavePost(post: PostModel, complition: @escaping () -> Void) {
         
         let queue = DispatchQueue.global()
         queue.async {
-            self.posts.append(post)
+            
+            var posts = self.getAllPosts()
+            posts.append(post)
+            self.setAllPosts(for: posts)
             complition()
         }
     }
@@ -25,11 +57,9 @@ class LocalDataManager: DataManagerProtocol {
     
     func syncSearchPost(for searchString: String) -> [PostModel] {
         
-        let searchedPosts = posts.filter { (PostModel) -> Bool in
-            
-            if let postText = PostModel.text {
-                return postText.contains(searchString)
-            }
+        let posts = getAllPosts()
+        let searchedPosts = posts.filter {
+            if let text = $0.text { return text.contains(searchString) }
             return false
         }
         return searchedPosts
@@ -39,11 +69,10 @@ class LocalDataManager: DataManagerProtocol {
         
         let queue = DispatchQueue.global()
         queue.async {
-            let searchedPosts = self.posts.filter { (PostModel) -> Bool in
-                
-                if let postText = PostModel.text {
-                    return postText.contains(searchString)
-                }
+            
+            let posts = self.getAllPosts()
+            let searchedPosts = posts.filter {
+                if let text = $0.text { return text.contains(searchString) }
                 return false
             }
             complition(searchedPosts)
@@ -54,18 +83,19 @@ class LocalDataManager: DataManagerProtocol {
     
     func syncDeletePost(with postID: String) {
         
-        posts.removeAll { (PostModel) -> Bool in
-            PostModel.id == postID
-        }
+        var posts = getAllPosts()
+        posts.removeAll { $0.id == postID }
+        setAllPosts(for: posts)
     }
     
     func asyncDeletePost(with postID: String, complition: @escaping () -> Void) {
         
         let queue = DispatchQueue.global()
         queue.async {
-            self.posts.removeAll { (PostModel) -> Bool in
-                PostModel.id == postID
-            }
+            
+            var posts = self.getAllPosts()
+            posts.removeAll { $0.id == postID }
+            self.setAllPosts(for: posts)
             complition()
         }
     }
@@ -73,13 +103,16 @@ class LocalDataManager: DataManagerProtocol {
     //MARK: - Get
     
     func syncGetPosts() -> [PostModel] {
-        return self.posts
+        
+        return getAllPosts()
     }
     
     func asyncGetPosts(complition: @escaping (([PostModel]) -> Void)) {
+        
         let queue = DispatchQueue.global()
         queue.async {
-            complition(self.posts)
+            let posts = self.getAllPosts()
+            complition(posts)
         }
     }
 }
